@@ -19,7 +19,8 @@
 #include <imgui/backends/imgui_impl_glfw.h>
 #include <imgui/backends/imgui_impl_opengl3.h>
 
-void processInput(GLFWwindow *window);
+
+void processInput(GLFWwindow *window, Camera* camera, float deltaTime);
 class Application {
 public:
     unsigned int width;
@@ -47,20 +48,29 @@ Application::Application(unsigned int width, unsigned int height, const std::str
     camera = new Camera(glm::vec3(0.0f,0.0f,3.0f));
     // Simple vertex and fragment shaders
     shader = new Shader("../src/shadertry.vs", "../src/shadertry.fs");
-
  
 
+    Model* sphereModel = new Model();
+    sphereModel->AddMesh(Prefabs::Sphere());
 
-    
+    // Example: create a grid of small spheres
+    const int gridSize = 5;
+    const float spacing = 1.0f;
+    for (int x = 0; x < gridSize; ++x) {
+        for (int y = 0; y < gridSize; ++y) {
+            for (int z = 0; z < gridSize; ++z) {
+                Entity* sphere = new Entity(sphereModel);
+                sphere->transform.position = glm::vec3(
+                    (x - gridSize/2.0f) * spacing,
+                    (y - gridSize/2.0f) * spacing,
+                    (z - gridSize/2.0f) * spacing-5
+                );
+                Entities.push_back(sphere);
+            }
+        }
+    }
 
-    Model* cubemodel = new Model();
-    cubemodel->AddMesh(Prefabs::Cube("../src/container.jpg"));
-    Model* pyramidModel = new Model();
-    pyramidModel->AddMesh(Prefabs::Pyramid("../src/container.jpg"));
-    Entity* entity1 = new Entity(cubemodel);
-    Entity* entity2 = new Entity(pyramidModel);
-    Entities.push_back(entity1);
-    Entities.push_back(entity2);
+
 
 }
 
@@ -83,9 +93,45 @@ void Application::Run() {
     glEnable(GL_DEPTH_TEST);
     glm::mat4 projection;
     projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+
+
+        glfwSetInputMode(window.GetNativeWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetWindowUserPointer(window.GetNativeWindow(), camera);
+
+    // Setup mouse callbacks
+    glfwSetCursorPosCallback(window.GetNativeWindow(), [](GLFWwindow* window, double xpos, double ypos){
+        static float lastX = 400.0f;
+        static float lastY = 300.0f;
+        static bool firstMouse = true;
+
+        if (firstMouse) {
+            lastX = xpos;
+            lastY = ypos;
+            firstMouse = false;
+        }
+
+        float xoffset = xpos - lastX;
+        float yoffset = lastY - ypos;
+        lastX = xpos;
+        lastY = ypos;
+
+        Camera* cam = (Camera*)glfwGetWindowUserPointer(window);
+        cam->ProcessMouseMovement(xoffset, yoffset);
+    });
+
+    glfwSetScrollCallback(window.GetNativeWindow(), [](GLFWwindow* window, double xoffset, double yoffset){
+        Camera* cam = (Camera*)glfwGetWindowUserPointer(window);
+        cam->ProcessMouseScroll((float)yoffset);
+    });
+    float deltaTime = 0.0f;
+    float lastFrame = 0.0f;
     // Main loop
     while (!window.ShouldClose()) {
-        processInput(window.GetNativeWindow());
+        float currentFrame = glfwGetTime();
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+
+        processInput(window.GetNativeWindow(), camera, deltaTime);
 
         // Start ImGui frame
 
@@ -97,14 +143,10 @@ void Application::Run() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         
-        int index =0;
         for(Entity* entity : Entities){
-            entity->transform.position.x=index*2;
-            entity->transform.position.z=-5;
             shader->setMat4("projection",projection);
             shader->setMat4("view", camera->GetViewMatrix());
             entity->Draw(*shader);
-            index ++;
         }
 
 
@@ -130,8 +172,24 @@ void Application::Run() {
     glfwTerminate();
 }
 
-void processInput(GLFWwindow *window) { 
-    if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) 
-        glfwSetWindowShouldClose(window, true); 
 
+
+void processInput(GLFWwindow *window, Camera* camera, float deltaTime) {
+    const float cameraSpeed = 2.5f * deltaTime; // adjust as needed
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        camera->ProcessKeyboard(FORWARD, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        camera->ProcessKeyboard(BACKWARD, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        camera->ProcessKeyboard(LEFT, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        camera->ProcessKeyboard(RIGHT, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+        camera->ProcessKeyboard(UP, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+        camera->ProcessKeyboard(DOWN, deltaTime);
+
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
 }

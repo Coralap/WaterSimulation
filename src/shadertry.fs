@@ -6,10 +6,11 @@ in vec2 TexCoords;
 
 out vec4 FragColor;
 uniform sampler2D Texture;
-uniform vec3 objectColor = vec3(1.0, 0.5, 0.31); // default color
+uniform vec3 objectColor; // default color
 
 void main()
 {
-    // Just render the object with a flat color
-    FragColor = texture(Texture, TexCoords);
+
+
+    FragColor = vec4(0.024f, 0.812f, 0.89f,1.0f);    
 }

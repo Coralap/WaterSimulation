@@ -125,5 +125,7 @@ namespace Prefabs {
         }
         return new Mesh(vertices, indices, texturePath);
     }
-
+    inline Mesh* Sphere(float radius) {
+        return Sphere("", 32, 16, radius);
+    }
 }

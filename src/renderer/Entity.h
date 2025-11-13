@@ -6,7 +6,6 @@ class Entity {
 public:
     Model* model;
     Transform transform;
-
     Entity(Model* model) : model(model) {}
 
     glm::mat4 getModelMatrix() const {

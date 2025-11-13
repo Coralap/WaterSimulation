@@ -31,13 +31,15 @@ public:
     }
 
     void Draw(Shader& shader){
-        if(texture!=NULL)
-            texture->use();
         shader.use();   
+
+        if(texture!=NULL){
+            texture->use();
+            shader.setInt("Texture", 0);
+        }
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
-        glBindTexture(GL_TEXTURE_2D, 0);
 
     }
 
